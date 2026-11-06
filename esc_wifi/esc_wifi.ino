@@ -18,8 +18,8 @@ const int   RESET_BTN_PIN = 9;                  // кнопка BOOT: 5 с ут�
 const int   IDLE_US  = 1000;               // мотор вимкнено (нижче діапазону ESC = нуль)
 const int   THR_MIN_US = 1100;             // 0% газу в діапазоні Skywalker V2 за замовчуванням
 const int   THR_MAX_US = 1940;             // 100% газу (діапазон за замовчуванням 1100..1940)
-const int   MAX_PERCENT = 10;              // МАКСИМУМ газу 10%
-const int   START_PERCENT = 5;             // старт: 5% = 1142 мкс
+const int   MAX_PERCENT = 1;               // МАКСИМУМ газу 1%
+const int   START_PERCENT = 1;             // 1% = 1108 мкс
 const unsigned long FAILSAFE_MS = 1000;    // немає зв'язку з телефоном -> мотор стоп
 const unsigned long ARM_MS = 3000;         // час 1000 мкс при старті (армінг ESC)
 // --------------------------------
@@ -82,8 +82,8 @@ small{color:#aaa}
 <button id="pw" class="off" onclick="tog()">УВІМКНУТИ</button>
 <h3>Режим</h3>
 <div id="modes"></div>
-<h3>Газ: <span id="pv">5</span>% (<span id="us">1000</span> мкс)</h3>
-<input type="range" id="sl" min="0" max="%MAX%" value="5" oninput="setP(this.value)">
+<h3>Газ: <span id="pv">1</span>% (<span id="us">1000</span> мкс)</h3>
+<input type="range" id="sl" min="0" max="%MAX%" value="1" oninput="setP(this.value)">
 <small>Максимум %MAX%%</small>
 <div class="box">
 <h3>Wi-Fi</h3>
@@ -93,8 +93,8 @@ small{color:#aaa}
 <br><small>Після збереження плата перезапуститься.<br>Підключіть телефон до нової мережі й відкрийте 192.168.4.1</small>
 </div>
 <script>
-var on=false,p=5,max=%MAX%;
-var modes=[["5%",5],["7%",7],["10%",10]];
+var on=false,p=1,max=%MAX%;
+var modes=[["1%",1]];
 var md=document.getElementById('modes');
 modes.forEach(function(m){if(m[1]>max)return;var b=document.createElement('button');b.textContent=m[0];b.id='m'+m[1];b.onclick=function(){setP(m[1])};md.appendChild(b)});
 function setP(v){p=Math.min(max,parseInt(v));document.getElementById('sl').value=p;ui();send()}
