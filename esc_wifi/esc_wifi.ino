@@ -18,9 +18,10 @@ const int   RESET_BTN_PIN = 9;                  // кнопка BOOT: 5 с ут�
 const int   IDLE_US  = 1000;               // мотор вимкнено (нижче діапазону ESC = нуль)
 const int   THR_MIN_US = 1100;             // 0% газу в діапазоні Skywalker V2 за замовчуванням
 const int   THR_MAX_US = 1940;             // 100% газу (діапазон за замовчуванням 1100..1940)
-const int   MIN_PERCENT = 2;               // МІНІМУМ газу при увімкненні 2%
-const int   MAX_PERCENT = 4;               // МАКСИМУМ газу 4%
-const int   START_PERCENT = 2;             // 2% = 1117 мкс
+// Газ задається в десятих частках відсотка: 50 = 5.0%
+const int   MIN_T10 = 40;                  // мінімум повзунка 4.0%
+const int   MAX_T10 = 70;                  // максимум повзунка 7.0%
+const int   START_T10 = 50;                // старт 5.0% = 1142 мкс (мотор крутиться)
 const unsigned long FAILSAFE_MS = 1000;    // немає зв'язку з телефоном -> мотор стоп
 const unsigned long ARM_MS = 3000;         // час 1000 мкс при старті (армінг ESC)
 // --------------------------------
@@ -32,7 +33,7 @@ WebServer server(80);
 Preferences prefs;
 String apSsid, apPass;
 bool motorOn = false;
-int  percent = START_PERCENT;
+int  tenths = START_T10;
 unsigned long lastBeat = 0;
 unsigned long restartAt = 0;
 unsigned long bootHeldSince = 0;
@@ -45,7 +46,7 @@ void pwmBegin()          { ledcSetup(0, PWM_FREQ, PWM_RES); ledcAttachPin(ESC_PI
 void pwmDuty(uint32_t d) { ledcWrite(0, d); }
 #endif
 
-int pulseUs() { return motorOn ? THR_MIN_US + percent * (THR_MAX_US - THR_MIN_US) / 100 : IDLE_US; }
+int pulseUs() { return motorOn ? THR_MIN_US + tenths * (THR_MAX_US - THR_MIN_US) / 1000 : IDLE_US; }
 
 void applyOutput() {
   uint32_t duty = (uint32_t)pulseUs() * 16384UL / 20000UL;
@@ -83,9 +84,9 @@ small{color:#aaa}
 <button id="pw" class="off" onclick="tog()">УВІМКНУТИ</button>
 <h3>Режим</h3>
 <div id="modes"></div>
-<h3>Газ: <span id="pv">2</span>% (<span id="us">1000</span> мкс)</h3>
-<input type="range" id="sl" min="%MIN%" max="%MAX%" value="2" oninput="setP(this.value)">
-<small>Діапазон %MIN%–%MAX%%</small>
+<h3>Газ: <span id="pv">5.0</span>% (<span id="us">1000</span> мкс)</h3>
+<input type="range" id="sl" min="%MIN%" max="%MAX%" step="1" value="50" oninput="setP(this.value)">
+<small>Повзунок: крок 0.1%</small>
 <div class="box">
 <h3>Wi-Fi</h3>
 <input type="text" id="ssid" maxlength="32" placeholder="Назва мережі" value="%SSID%">
@@ -94,13 +95,13 @@ small{color:#aaa}
 <br><small>Після збереження плата перезапуститься.<br>Підключіть телефон до нової мережі й відкрийте 192.168.4.1</small>
 </div>
 <script>
-var on=false,p=2,min=%MIN%,max=%MAX%;
-var modes=[["2%",2],["3%",3],["4%",4]];
+var on=false,p=50,min=%MIN%,max=%MAX%;
+var modes=[["4.5%",45],["5%",50],["6%",60]];
 var md=document.getElementById('modes');
 modes.forEach(function(m){if(m[1]>max)return;var b=document.createElement('button');b.textContent=m[0];b.id='m'+m[1];b.onclick=function(){setP(m[1])};md.appendChild(b)});
 function setP(v){p=Math.max(min,Math.min(max,parseInt(v)));document.getElementById('sl').value=p;ui();send()}
 function tog(){on=!on;ui();send()}
-function ui(){document.getElementById('pv').textContent=p;document.getElementById('us').textContent=on?Math.round(1100+p*8.4):1000;
+function ui(){document.getElementById('pv').textContent=(p/10).toFixed(1);document.getElementById('us').textContent=on?Math.round(1100+p*0.84):1000;
 var b=document.getElementById('pw');b.textContent=on?'ВИМКНУТИ':'УВІМКНУТИ';b.className=on?'on':'off';
 modes.forEach(function(m){var e=document.getElementById('m'+m[1]);if(e)e.className=(m[1]==p)?'sel':''})}
 function send(){fetch('/api?on='+(on?1:0)+'&p='+p).then(function(r){return r.json()}).then(function(s){
@@ -118,19 +119,19 @@ ui();send();setInterval(send,300);
 
 void handleRoot() {
   String html = FPSTR(PAGE);
-  html.replace("%MIN%", String(MIN_PERCENT));
-  html.replace("%MAX%", String(MAX_PERCENT));
+  html.replace("%MIN%", String(MIN_T10));
+  html.replace("%MAX%", String(MAX_T10));
   html.replace("%SSID%", htmlEsc(apSsid));
   server.send(200, "text/html; charset=utf-8", html);
 }
 
 void handleApi() {
-  if (server.hasArg("p")) percent = constrain(server.arg("p").toInt(), MIN_PERCENT, MAX_PERCENT);
+  if (server.hasArg("p")) tenths = constrain(server.arg("p").toInt(), MIN_T10, MAX_T10);
   if (server.hasArg("on")) motorOn = (server.arg("on") == "1");
   lastBeat = millis();
   applyOutput();
   server.send(200, "application/json",
-              String("{\"on\":") + (motorOn ? "true" : "false") + ",\"p\":" + percent + ",\"us\":" + pulseUs() + "}");
+              String("{\"on\":") + (motorOn ? "true" : "false") + ",\"p\":" + tenths + ",\"us\":" + pulseUs() + "}");
 }
 
 void handleWifi() {
