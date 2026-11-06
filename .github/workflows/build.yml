@@ -1,0 +1,20 @@
+name: Build ESC firmware (ESP32-C3)
+on: workflow_dispatch
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: arduino/setup-arduino-cli@v2
+      - name: Compile
+        run: |
+          arduino-cli config init
+          arduino-cli config add board_manager.additional_urls https://espressif.github.io/arduino-esp32/package_esp32_index.json
+          arduino-cli core update-index
+          arduino-cli core install esp32:esp32
+          arduino-cli compile --fqbn esp32:esp32:esp32c3:CDCOnBoot=cdc --output-dir out esc_wifi
+          ls -l out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: esc-firmware
+          path: out/*.merged.bin
