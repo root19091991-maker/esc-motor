@@ -16,7 +16,7 @@ const char* DEF_PASS = "12345678";         // мінімум 8 символів
 const int   ESC_PIN  = 4;                  // сигнал ESC -> GPIO4 (GND ESC -> GND плати)
 const int   RESET_BTN_PIN = 9;                  // кнопка BOOT: 5 с утримання = скидання Wi-Fi
 const int   IDLE_US  = 1000;               // мотор вимкнено (нижче діапазону ESC = нуль)
-const int   ON_US_MAX = 1134;              // максимум імпульсу (повзунок від 1000 до цього значення)
+const int   ON_US_MAX = 1142;              // максимум імпульсу (повзунок від 1000 до цього значення)
 const unsigned long FAILSAFE_MS = 1000;    // немає зв'язку з телефоном -> мотор стоп
 const unsigned long ARM_MS = 3000;         // час 1000 мкс при старті (армінг ESC)
 // --------------------------------
