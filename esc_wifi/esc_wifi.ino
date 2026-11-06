@@ -158,16 +158,20 @@ void setup() {
   apSsid = prefs.getString("ssid", DEF_SSID);
   apPass = prefs.getString("pass", DEF_PASS);
   prefs.end();
-  Serial.println("ESC arming...");
-  delay(ARM_MS);                       // ESC чує мінімум і армиться
+  delay(1000);                         // пауза: живлення від BEC стабілізується
+  WiFi.persistent(false);
   WiFi.mode(WIFI_AP);
-  WiFi.softAP(apSsid.c_str(), apPass.c_str());
+  WiFi.setSleep(false);
+  WiFi.softAP(apSsid.c_str(), apPass.c_str(), 1, 0, 4);   // канал 1, видима, до 4 клієнтів
+  WiFi.setTxPower(WIFI_POWER_8_5dBm);  // знижена потужність: стабільніше на платах Super Mini
   Serial.print("AP: "); Serial.print(apSsid);
   Serial.print("  IP: "); Serial.println(WiFi.softAPIP());
   server.on("/", handleRoot);
   server.on("/api", handleApi);
   server.on("/wifi", handleWifi);
   server.begin();
+  Serial.println("ESC arming...");
+  delay(ARM_MS);                       // ESC чує мінімум і армиться (Wi-Fi вже працює)
   lastBeat = millis();
 }
 
