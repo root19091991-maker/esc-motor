@@ -14,7 +14,7 @@
 const char* DEF_SSID = "ESC-Motor";
 const char* DEF_PASS = "12345678";         // мінімум 8 символів
 const int   ESC_PIN  = 4;                  // сигнал ESC -> GPIO4 (GND ESC -> GND плати)
-const int   BOOT_PIN = 9;                  // кнопка BOOT: 5 с утримання = скидання Wi-Fi
+const int   RESET_BTN_PIN = 9;                  // кнопка BOOT: 5 с утримання = скидання Wi-Fi
 const int   MIN_US   = 1000;               // 0% газу
 const int   MAX_US   = 2000;               // 100% газу
 const int   MAX_PERCENT = 10;              // МАКСИМУМ газу 10%
@@ -149,7 +149,7 @@ void handleWifi() {
 
 void setup() {
   Serial.begin(115200);
-  pinMode(BOOT_PIN, INPUT_PULLUP);
+  pinMode(RESET_BTN_PIN, INPUT_PULLUP);
   pwmBegin();
   motorOn = false;
   applyOutput();                       // 1000 мкс = нуль газу
@@ -182,7 +182,7 @@ void loop() {
   if (restartAt && millis() > restartAt) ESP.restart();
 
   // Скидання Wi-Fi до заводських: утримувати BOOT 5 с
-  if (digitalRead(BOOT_PIN) == LOW) {
+  if (digitalRead(RESET_BTN_PIN) == LOW) {
     if (!bootHeldSince) bootHeldSince = millis();
     if (millis() - bootHeldSince > 5000) {
       motorOn = false;
@@ -191,7 +191,7 @@ void loop() {
       prefs.clear();
       prefs.end();
       Serial.println("Wi-Fi reset. Release BOOT.");
-      while (digitalRead(BOOT_PIN) == LOW) delay(50);   // відпустіть кнопку, потім перезапуск
+      while (digitalRead(RESET_BTN_PIN) == LOW) delay(50);   // відпустіть кнопку, потім перезапуск
       ESP.restart();
     }
   } else {
