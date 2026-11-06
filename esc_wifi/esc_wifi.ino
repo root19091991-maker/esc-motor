@@ -15,10 +15,11 @@ const char* DEF_SSID = "ESC-Motor";
 const char* DEF_PASS = "12345678";         // мінімум 8 символів
 const int   ESC_PIN  = 4;                  // сигнал ESC -> GPIO4 (GND ESC -> GND плати)
 const int   RESET_BTN_PIN = 9;                  // кнопка BOOT: 5 с утримання = скидання Wi-Fi
-const int   MIN_US   = 1000;               // 0% газу
-const int   MAX_US   = 2000;               // 100% газу
+const int   IDLE_US  = 1000;               // мотор вимкнено (нижче діапазону ESC = нуль)
+const int   THR_MIN_US = 1100;             // 0% газу в діапазоні Skywalker V2 за замовчуванням
+const int   THR_MAX_US = 1940;             // 100% газу (діапазон за замовчуванням 1100..1940)
 const int   MAX_PERCENT = 10;              // МАКСИМУМ газу 10%
-const int   START_PERCENT = 5;             // старт: 5% = 1050 мкс
+const int   START_PERCENT = 5;             // старт: 5% = 1142 мкс
 const unsigned long FAILSAFE_MS = 1000;    // немає зв'язку з телефоном -> мотор стоп
 const unsigned long ARM_MS = 3000;         // час 1000 мкс при старті (армінг ESC)
 // --------------------------------
@@ -43,7 +44,7 @@ void pwmBegin()          { ledcSetup(0, PWM_FREQ, PWM_RES); ledcAttachPin(ESC_PI
 void pwmDuty(uint32_t d) { ledcWrite(0, d); }
 #endif
 
-int pulseUs() { return motorOn ? MIN_US + percent * (MAX_US - MIN_US) / 100 : MIN_US; }
+int pulseUs() { return motorOn ? THR_MIN_US + percent * (THR_MAX_US - THR_MIN_US) / 100 : IDLE_US; }
 
 void applyOutput() {
   uint32_t duty = (uint32_t)pulseUs() * 16384UL / 20000UL;
@@ -81,7 +82,7 @@ small{color:#aaa}
 <button id="pw" class="off" onclick="tog()">УВІМКНУТИ</button>
 <h3>Режим</h3>
 <div id="modes"></div>
-<h3>Газ: <span id="pv">5</span>% (<span id="us">1050</span> мкс)</h3>
+<h3>Газ: <span id="pv">5</span>% (<span id="us">1000</span> мкс)</h3>
 <input type="range" id="sl" min="0" max="%MAX%" value="5" oninput="setP(this.value)">
 <small>Максимум %MAX%%</small>
 <div class="box">
@@ -98,7 +99,7 @@ var md=document.getElementById('modes');
 modes.forEach(function(m){if(m[1]>max)return;var b=document.createElement('button');b.textContent=m[0];b.id='m'+m[1];b.onclick=function(){setP(m[1])};md.appendChild(b)});
 function setP(v){p=Math.min(max,parseInt(v));document.getElementById('sl').value=p;ui();send()}
 function tog(){on=!on;ui();send()}
-function ui(){document.getElementById('pv').textContent=p;document.getElementById('us').textContent=on?1000+p*10:1000;
+function ui(){document.getElementById('pv').textContent=p;document.getElementById('us').textContent=on?Math.round(1100+p*8.4):1000;
 var b=document.getElementById('pw');b.textContent=on?'ВИМКНУТИ':'УВІМКНУТИ';b.className=on?'on':'off';
 modes.forEach(function(m){var e=document.getElementById('m'+m[1]);if(e)e.className=(m[1]==p)?'sel':''})}
 function send(){fetch('/api?on='+(on?1:0)+'&p='+p).then(function(r){return r.json()}).then(function(s){
